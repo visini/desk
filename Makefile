@@ -1,0 +1,3 @@
+install-go:
+	echo "install go"
+# ...
