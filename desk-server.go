@@ -1,3 +1,6 @@
+// Adapted from David Knezić https://github.com/davidknezic/desk/blob/master/bridge.go
+// Licensed under MIT (c) David Knezić (https://github.com/davidknezic/desk/blob/master/LICENSE)
+
 package main
 
 import (
