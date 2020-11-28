@@ -1,41 +1,78 @@
 # Standing Desk
 
-Some introduction
+A Raspberry Pi- and Arduino-controlled standing desk: Control your [LogicData](http://www.logicdata.at)-powered standing desk remotely.
 
-## Overview
+The project components (hardware components, hardware wiring, software components and installation) are described in detail below.
 
-Foo
+## Hardware
 
-## Hardware Components
+### Required Components
 
-Foo
+- Jumper wires and breadboard
+- Soldering equipment
+- Raspberry Pi 3 (or similar)
+- Arduino Micro (or similar)
+- Female 7-pole DIN circular socket (to connect to handswitch)
+- Male 7-pole DIN circular plug (to connect to motor controller)
 
-### Wiring
+### Wiring Overview
 
 ![Wiring](wiring/wiring.png)
 
-## Software Components
+The diagram for the wiring of DIN connections (left) was created by [Borislav B](https://www.mikrocontroller.net/topic/373579). Colors correspond between the diagrams.
 
-1. `xxxx.ino` is a small Arduino xxxx which controls the xxx.
-   - Copyright by xxxxxxxx
-2. `desk-server.go` is a small Golang program which exposes HTTP methods for controlling the desk and runs on the Raspberry Pi.
-   - Adapted from David Knezić https://github.com/davidknezic/desk/blob/master/bridge.go
-3. `ssh_desk_handler.py` is a small Python program which enables controlling the desk via SSH from your machine.
+## Software
+
+### Building Blocks
+
+1. `DeskControl.ino` is the main program running on Arduino with the task of controlling the signal going to/from the motor controller and handswitch.
+   - Copyright by [Borislav Bertoldi](https://www.mikrocontroller.net/topic/373579)
+2. `desk-server.go` is a small Go program which exposes HTTP methods for controlling the desk and runs on the Raspberry Pi:
+   - Adapted from [David Knezić's project](https://github.com/davidknezic/desk/blob/master/bridge.go)
+   - `curl localhost:9987/up` or `/down` or `/toggle`
+   - Configure `UP_HEIGHT` and `DOWN_HEIGHT` with your preferred standing and sitting height (or extend the logic yourself). Default values: `UP_HEIGHT=90` and `DOWN_HEIGHT=10`.
+3. `ssh_desk_handler.py` is a small Python program which enables controlling the desk via SSH (e.g., from your workstation).
    - See [visini/stand](https://github.com/visini/stand) or [visini/timebox](https://github.com/visini/timebox)
 
 ### Installation
 
-See `Makefile` for detailed steps. :
+First, install go (tested version: go version go1.15.3 linux/arm)
+
+See instructions here: <https://raspberrypi.stackexchange.com/questions/25956/install-golang-the-easy-way/46828#46828>
+
+Add to your `~/.bashrc`:
 
 ```shell
-# see david knezic!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-git clone https://github.com/visini/desk.git
-make install-go
-make ...
+export PATH="$PATH:$GOROOT/bin"
+export GOROOT=/usr/local/go
+export GOPATH=/home/pi/go/
 ```
 
-## Credits and Further Resources
+Clone and build the project, and add to `init.d`:
 
-- david knezic
-- desk control.ino guy
-- the guy with the drawing
+```shell
+git clone https://github.com/visini/desk.git ~/go/src/github.com/visini/desk
+cd ~/go/src/github.com/visini/desk
+go get
+go build bridge.go
+sudo ln -s ~/go/src/github.com/visini/desk/init.d/desk-server /etc/init.d/desk-server
+sudo update-rc.d desk-server defaults
+```
+
+## Optional: Configuring `shairport-sync`
+
+The Raspberry Pi also serves as my [shairport-sync](https://github.com/mikebrady/shairport-sync) host directly connected to my external audio interface in the cable tray of the desk.
+
+Note: If you are using an external audio interface, be sure to adjust `/usr/local/etc/shairport-sync.conf` accordingly (see also [here](https://github.com/mikebrady/shairport-sync/issues/741) for more information). To find out the hardware device `id`, run `alsamixer` and press `S`. Then configure `shairport-sync.conf` accordingly (assuming sound card device `id=1`):
+
+```conf
+output_device = "hw:1,0";
+mixer_control_name = "PCM";
+mixer_device = "hw:1";
+```
+
+## Attribution and Similar Projects
+
+- [A project by David Knezić](https://github.com/davidknezic/desk/blob/master/bridge.go) which includes a [HomeBridge](https://homebridge.io) integration (i.e., allowing to control your desk from your Apple devices).
+- [A project by Borislav Bertoldi](https://www.mikrocontroller.net/topic/373579), from which I have retrieved the `DeskControl.ino` file for the Arduino, and which includes a C# application running on Windows.
+- [A project by Martin Nuc](https://github.com/MartinNuc/logic-data-controller) written in Rust.
